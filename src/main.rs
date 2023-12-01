@@ -5,7 +5,7 @@ use std::fmt::Display;
 
 fn solve_puzzle(id: (u32, u32)) -> Box<dyn Display> {
     Box::new(match id {
-        (1, 1) => puzzle_1::puzzle_1(),
+        (1, 1) => format!("{}", puzzle_1::puzzle_1()),
         (1..=25, 1..=2) => String::from("Still unknown..."),
         (_, _) => String::from("Forever unknown..."),
     })
