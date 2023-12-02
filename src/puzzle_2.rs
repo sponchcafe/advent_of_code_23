@@ -3,11 +3,18 @@ use std::str::FromStr;
 
 const MAX_CUBES: CubeSet = CubeSet::from_tuple((12, 13, 14));
 
-pub fn puzzle_2() -> u32 {
+pub fn puzzle_2_1() -> u32 {
     load_lines("2/input.txt")
         .map(|l| l.unwrap().parse::<Game>().expect("valid puzzle input"))
         .filter(|g| g.possible(&MAX_CUBES))
         .fold(0, |id_sum, g| id_sum + g.get_id())
+}
+
+pub fn puzzle_2_2() -> u32 {
+    load_lines("2/input.txt")
+        .map(|l| l.unwrap().parse::<Game>().expect("valid puzzle input"))
+        .map(|g| g.minimal_set().power())
+        .sum()
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -63,6 +70,10 @@ impl CubeSet {
 
     fn possible(&self, max: &CubeSet) -> bool {
         self.red <= max.red && self.green <= max.green && self.blue <= max.blue
+    }
+
+    fn power(&self) -> u32 {
+        self.red * self.green * self.blue
     }
 }
 
@@ -137,6 +148,12 @@ impl Game {
     fn get_id(&self) -> u32 {
         self.id
     }
+
+    fn minimal_set(&self) -> CubeSet {
+        CubeSet::from_tuple(self.rounds.iter().fold((0, 0, 0), |max, r| {
+            (r.red.max(max.0), r.green.max(max.1), r.blue.max(max.2))
+        }))
+    }
 }
 
 #[cfg(test)]
@@ -207,5 +224,17 @@ mod test {
         };
         assert!(game1.possible(&maximum));
         assert!(!game2.possible(&maximum));
+    }
+
+    #[test]
+    fn test_minimal_set() {
+        let round1 = CubeSet::from_tuple((1, 2, 3));
+        let round2 = CubeSet::from_tuple((4, 5, 6));
+        let round3 = CubeSet::from_tuple((2, 8, 1));
+        let game1 = Game {
+            id: 1,
+            rounds: vec![round1, round2, round3],
+        };
+        assert_eq!(CubeSet::from_tuple((4, 8, 6)), game1.minimal_set());
     }
 }
