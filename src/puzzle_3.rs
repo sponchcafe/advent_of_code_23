@@ -18,13 +18,7 @@ pub fn puzzle_3_1() -> u32 {
     let schematic = schematic(&input, width);
     schematic
         .iter()
-        .filter_map(|(pos, item)| {
-            if let SchematicItem::Serial { number } = item {
-                Some((pos, number))
-            } else {
-                None
-            }
-        })
+        .filter_map(|(pos, item)| item.number().map(|num| (pos, num)))
         .filter_map(|(pos, serial)| {
             for ref h in pos.hull() {
                 if let Some(SchematicItem::Symbol { symbol: _ }) = schematic.get(h) {
@@ -36,7 +30,34 @@ pub fn puzzle_3_1() -> u32 {
         .fold(0, |sum, serial| sum + serial)
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub fn puzzle_3_2() -> u32 {
+    let input = load_file("3/input.txt");
+    let width = input.find("\n").expect("at least one line");
+    let schematic = schematic(&input, width);
+    schematic
+        .iter()
+        .filter_map(|(pos, item)| item.gear().map(|()| pos))
+        .filter_map(|pos| {
+            let mut values = vec![];
+            for ref h in pos.hull() {
+                if let Some(item) = schematic.get(h) {
+                    if let Some(n) = item.number() {
+                        values.push((pos, n));
+                    }
+                }
+            }
+            if values.len() == 2 {
+                println!("{:?}", values);
+                Some(values)
+            } else {
+                None
+            }
+        })
+        .map(|v| v[0].1 * v[1].1)
+        .sum()
+}
+
+#[derive(Debug, PartialEq, Eq)]
 struct Position {
     line: isize,
     column: isize,
@@ -62,11 +83,46 @@ impl Position {
     }
 }
 
+impl PartialOrd for Position {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Position {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        let a = (self.line, self.column);
+        let b = (other.line, other.column);
+        a.cmp(&b)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 enum SchematicItem {
-    Serial { number: u32 },
+    Number { number: u32 },
     Symbol { symbol: char },
     Space,
+}
+
+impl SchematicItem {
+    fn number(&self) -> Option<u32> {
+        match self {
+            SchematicItem::Number { number: n } => Some(*n),
+            _ => None,
+        }
+    }
+    fn symbol(&self) -> Option<char> {
+        match self {
+            SchematicItem::Symbol { symbol: s } => Some(*s),
+            _ => None,
+        }
+    }
+    fn gear(&self) -> Option<()> {
+        match self {
+            SchematicItem::Symbol { symbol: '*' } => Some(()),
+            _ => None,
+        }
+    }
 }
 
 fn space(input: &str) -> IResult<&str, SchematicItem> {
@@ -76,7 +132,7 @@ fn space(input: &str) -> IResult<&str, SchematicItem> {
 
 fn serial(input: &str) -> IResult<&str, SchematicItem> {
     let (output, number) = u32(input)?;
-    Ok((output, SchematicItem::Serial { number }))
+    Ok((output, SchematicItem::Number { number }))
 }
 
 fn symbol(input: &str) -> IResult<&str, SchematicItem> {
@@ -130,11 +186,11 @@ mod test {
     #[test]
     fn test_serial() {
         assert_eq!(
-            Ok(("", SchematicItem::Serial { number: 123 })),
+            Ok(("", SchematicItem::Number { number: 123 })),
             serial("123")
         );
         assert_eq!(
-            Ok(("...", SchematicItem::Serial { number: 0 })),
+            Ok(("...", SchematicItem::Number { number: 0 })),
             serial("0...")
         );
     }
@@ -196,7 +252,7 @@ mod test {
                 column: 2,
                 len: 1,
             },
-            SchematicItem::Serial { number: 6 },
+            SchematicItem::Number { number: 6 },
         );
         expected.insert(
             Position {
@@ -204,7 +260,7 @@ mod test {
                 column: 1,
                 len: 3,
             },
-            SchematicItem::Serial { number: 123 },
+            SchematicItem::Number { number: 123 },
         );
         expected.insert(
             Position {
@@ -228,7 +284,7 @@ mod test {
                 column: 3,
                 len: 1,
             },
-            SchematicItem::Serial { number: 4 },
+            SchematicItem::Number { number: 4 },
         );
         expected.insert(
             Position {
@@ -236,7 +292,7 @@ mod test {
                 column: 0,
                 len: 2,
             },
-            SchematicItem::Serial { number: 99 },
+            SchematicItem::Number { number: 99 },
         );
         expected.insert(
             Position {
@@ -290,10 +346,15 @@ mod test {
             .map(|p| Position {
                 line: p.0,
                 column: p.1,
-                len: 0,
+                len: 1,
             })
             .collect::<BTreeSet<Position>>();
 
         assert_eq!(positions, pos.hull());
+    }
+
+    #[test]
+    fn test_get_number() {
+        assert_eq!(Some(123), SchematicItem::Number { number: 123 }.number());
     }
 }
