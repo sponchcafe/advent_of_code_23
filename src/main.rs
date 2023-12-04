@@ -1,6 +1,7 @@
 mod puzzle_1;
 mod puzzle_2;
 mod puzzle_3;
+mod puzzle_4;
 mod util;
 
 use std::fmt::Display;
@@ -12,6 +13,7 @@ fn solve_puzzle(id: (u32, u32)) -> Box<dyn Display> {
         (2, 2) => format!("{}", puzzle_2::puzzle_2_2()),
         (3, 1) => format!("{}", puzzle_3::puzzle_3_1()),
         (3, 2) => format!("{}", puzzle_3::puzzle_3_2()),
+        (4, 1) => format!("{}", puzzle_4::puzzle_4_1()),
         (1..=25, 1..=2) => String::from("Still unknown..."),
         (_, _) => String::from("Forever unknown..."),
     })
