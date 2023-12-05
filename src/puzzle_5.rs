@@ -14,6 +14,20 @@ pub fn puzzle_5_1() -> u64 {
         .fold(u64::MAX, |min, val| u64::min(min, val))
 }
 
+pub fn puzzle_5_2() -> u64 {
+    let mut lines = load_lines("5/input.txt").map(Result::unwrap);
+    let seeds = parse_seeds(&mut lines).expect("seeds");
+    lines.next();
+    let maps = parse_maps(&mut lines);
+
+    seeds
+        .chunks(2)
+        .into_iter()
+        .map(|range| [range[0], range[0] + range[1] - 1])
+        .flat_map(|range| range.into_iter().map(|seed| remap_all(seed, &maps)))
+        .fold(u64::MAX, |min, val| u64::min(min, val))
+}
+
 fn parse_seeds(lines: &mut impl Iterator<Item = String>) -> Result<Vec<u64>> {
     let mut seedlines = lines.take_while(|l| !l.is_empty());
     seedlines
@@ -42,8 +56,7 @@ fn parse_maps(lines: &mut impl Iterator<Item = String>) -> Vec<AgriMap> {
 
 fn parse_map(lines: &mut impl Iterator<Item = String>) -> Result<AgriMap> {
     let mut maplines = lines.take_while(|l| !l.is_empty());
-    let name = maplines.next().ok_or(Error::msg("no name"))?;
-    println!("{}", name);
+    let _ = maplines.next().ok_or(Error::msg("no name"))?;
     let mut map = AgriMap::new();
     for remap in maplines.map(|l| l.trim().parse::<Remap>()) {
         map.push(remap?);

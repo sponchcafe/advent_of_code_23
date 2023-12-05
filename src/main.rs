@@ -17,6 +17,7 @@ fn solve_puzzle(id: (u32, u32)) -> Box<dyn Display> {
         (4, 1) => format!("{}", puzzle_4::puzzle_4_1()),
         (4, 2) => format!("{}", puzzle_4::puzzle_4_2()),
         (5, 1) => format!("{}", puzzle_5::puzzle_5_1()),
+        (5, 2) => format!("{}", puzzle_5::puzzle_5_2()),
         (1..=25, 1..=2) => String::from("Still unknown..."),
         (_, _) => String::from("Forever unknown..."),
     })
