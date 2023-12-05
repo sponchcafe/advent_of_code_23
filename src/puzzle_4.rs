@@ -1,13 +1,26 @@
 use crate::util::load_lines;
+use ::std::collections::BTreeSet;
 use anyhow::Error as AnyhowError;
-use nom::InputTakeAtPosition;
-use std::{collections::BTreeSet, str::FromStr};
+use std::cell::Cell;
+use std::str::FromStr;
 
 pub fn puzzle_4_1() -> u32 {
     load_lines("4/input.txt")
         .map(|l| Card::from_str(&l.expect("read line")).expect("valid card"))
         .map(|c| c.score())
         .sum()
+}
+
+pub fn puzzle_4_2() -> u32 {
+    let mut wins: Vec<u32> = load_lines("4/input.txt")
+        .map(|l| {
+            Card::from_str(&l.expect("read line"))
+                .expect("valid card")
+                .hits()
+        })
+        .collect();
+    multiply_cards(&mut wins);
+    wins.iter().sum()
 }
 
 #[derive(Debug, PartialEq)]
@@ -17,14 +30,36 @@ struct Card {
     scored: BTreeSet<u32>,
 }
 
+#[derive(Debug, PartialEq)]
+struct MultiCard {
+    count: Cell<u64>,
+    card: Card,
+}
+
 impl Card {
     fn score(&self) -> u32 {
-        let hits = self.scored.intersection(&self.winning).count();
+        let hits = self.hits();
         match hits {
             0..=1 => hits as u32,
             n => 2u32.pow((n - 1) as u32),
         }
     }
+    fn hits(&self) -> u32 {
+        self.scored.intersection(&self.winning).count() as u32
+    }
+}
+
+fn multiply_cards(winning: &mut [u32]) {
+    let mut count = vec![1u32; winning.len()];
+    for i in 0..winning.len() {
+        for j in (i + 1)..=(i + (winning[i] as usize)) {
+            if j >= winning.len() {
+                break;
+            }
+            count[j] += count[i];
+        }
+    }
+    winning.clone_from_slice(&count[..]);
 }
 
 impl FromStr for Card {
@@ -110,5 +145,19 @@ mod test {
             scored,
         };
         assert_eq!(8, card.score());
+    }
+
+    #[test]
+    fn test_multiply_cards() {
+        let mut input = [4, 2, 2, 1, 0, 0];
+        //          [1, 1, 1, 1, 1, 1]
+        //          [1, 2, 2, 2, 2, 1]
+        //          [1, 2, 4, 4, 2, 1]
+        //          [1, 2, 4, 8, 6, 1]
+        //          [1, 2, 4, 8, 14, 1]
+        let expected = [1, 2, 4, 8, 14, 1];
+        multiply_cards(&mut input[..]);
+
+        assert_eq!(expected, input);
     }
 }
