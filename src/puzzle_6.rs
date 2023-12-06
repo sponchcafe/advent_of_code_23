@@ -1,10 +1,10 @@
 use crate::util::load_lines;
 use anyhow::{Error, Result};
 
-pub fn puzzle_6_1() -> u32 {
+pub fn puzzle_6_1() -> u64 {
     let mut lines = load_lines("6/input.txt");
-    let times: Vec<u32> = parse_line(&mut lines).expect("valid times");
-    let records: Vec<u32> = parse_line(&mut lines).expect("valid records");
+    let times: Vec<u64> = parse_line(&mut lines).expect("valid times");
+    let records: Vec<u64> = parse_line(&mut lines).expect("valid records");
     times
         .into_iter()
         .zip(records)
@@ -13,9 +13,16 @@ pub fn puzzle_6_1() -> u32 {
         .fold(1, |acc, val| acc * val)
 }
 
+pub fn puzzle_6_2() -> u64 {
+    let mut lines = load_lines("6/input.txt");
+    let time = parse_line_joined(&mut lines).expect("valid time");
+    let record = parse_line_joined(&mut lines).expect("valid record");
+    ways_to_win(&Race { time, record })
+}
+
 fn parse_line<E>(
     lines: &mut impl Iterator<Item = std::result::Result<String, E>>,
-) -> Result<Vec<u32>>
+) -> Result<Vec<u64>>
 where
     E: std::error::Error + Sync + Send + 'static,
 {
@@ -28,15 +35,33 @@ where
         .trim()
         .split(char::is_whitespace)
         .filter(|s| !str::is_empty(s))
-        .map(str::parse::<u32>)
-        .collect::<Result<Vec<u32>, _>>()
+        .map(str::parse::<u64>)
+        .collect::<Result<Vec<u64>, _>>()
         .map_err(Error::from)
+}
+
+fn parse_line_joined<E>(
+    lines: &mut impl Iterator<Item = std::result::Result<String, E>>,
+) -> Result<u64>
+where
+    E: std::error::Error + Sync + Send + 'static,
+{
+    let num: String = lines
+        .next()
+        .ok_or(Error::msg("no line"))??
+        .split(":")
+        .last()
+        .ok_or(Error::msg("no numbers"))?
+        .chars()
+        .filter(|c| !char::is_whitespace(*c))
+        .collect();
+    Ok(num.parse::<u64>()?)
 }
 
 #[derive(Debug, PartialEq, Eq)]
 struct Race {
-    time: u32,
-    record: u32,
+    time: u64,
+    record: u64,
 }
 
 /// Intersection of winning function with record R
@@ -45,23 +70,23 @@ struct Race {
 ///
 /// Quadratic expansion
 /// x = 1/2 T +/- sqrt(T^2/4 - R)
-fn ways_to_win(race: &Race) -> u32 {
-    let t: f32 = race.time as f32;
-    let r: f32 = race.record as f32;
-    let a = 0.5 * t + f32::sqrt(f32::powf(t, 2.0) / 4.0 - r);
-    let b = 0.5 * t - f32::sqrt(f32::powf(t, 2.0) / 4.0 - r);
+fn ways_to_win(race: &Race) -> u64 {
+    let t: f64 = race.time as f64;
+    let r: f64 = race.record as f64;
+    let a = 0.5 * t + f64::sqrt(f64::powf(t, 2.0) / 4.0 - r);
+    let b = 0.5 * t - f64::sqrt(f64::powf(t, 2.0) / 4.0 - r);
     let cnt = integers_between(a, b);
     cnt
 }
 
-fn integers_between(mut a: f32, mut b: f32) -> u32 {
+fn integers_between(mut a: f64, mut b: f64) -> u64 {
     if a > b {
         std::mem::swap(&mut a, &mut b);
     }
     if a.fract() == 0.0 {
         a += 1.0; // Correction if float is exact integer
     }
-    ((a.ceil() as u32)..(b.ceil() as u32)).count() as u32
+    ((a.ceil() as u64)..(b.ceil() as u64)).count() as u64
 }
 
 #[cfg(test)]
