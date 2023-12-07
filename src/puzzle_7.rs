@@ -1,15 +1,22 @@
 use crate::util::load_lines;
 use anyhow::Error;
 use std::collections::BTreeMap;
-use std::str::FromStr;
 
 pub fn puzzle_7_1() -> u64 {
+    parse_hands(false).total_winnings()
+}
+
+pub fn puzzle_7_2() -> u64 {
+    parse_hands(true).total_winnings()
+}
+
+fn parse_hands(jokers: bool) -> Hands {
     let hands = load_lines("7/input.txt")
         .map(Result::unwrap)
-        .map(|s| s.parse::<Hand>())
+        .map(|s| Hand::parse(&s, jokers))
         .collect::<Result<Vec<Hand>, _>>()
         .expect("valid hands");
-    Hands::new(hands).total_winnings()
+    Hands::new(hands)
 }
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
@@ -18,17 +25,16 @@ struct HandCards {
 }
 
 impl HandCards {
-    fn new(s: &str) -> Self {
-        let cards: Vec<Card> = s.chars().map(Card::new).collect();
+    fn new(s: &str, jokers: bool) -> Self {
+        let cards: Vec<Card> = s.chars().map(|c| Card::new(c, jokers)).collect();
         let mut card_arr = [Card::default(); 5];
         card_arr[..].copy_from_slice(&cards[..]);
         HandCards { cards: card_arr }
     }
 
-    fn kind(&self) -> HandKind {
+    fn counts_to_kind(counts: Counts) -> HandKind {
         use HandKind::*;
-        let counter = Counter::new(&self.cards);
-        match counter.counts() {
+        match counts {
             [5, ..] => FiveOfAKind,
             [4, ..] => FourOfAKind,
             [3, 2, ..] => FullHouse,
@@ -38,12 +44,19 @@ impl HandCards {
             _ => HighCard,
         }
     }
+
+    fn kind(&self) -> HandKind {
+        let mut counter = Counter::new(&self.cards);
+        counter.apply_joker_rule(&Card::Joker);
+        Self::counts_to_kind(counter.counts())
+    }
 }
 
 type Counts = [usize; 5];
 
 #[derive(Debug, Default, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 enum Card {
+    Joker,
     #[default]
     Two,
     Three,
@@ -73,7 +86,7 @@ enum HandKind {
 }
 
 impl Card {
-    fn new(c: char) -> Card {
+    fn new(c: char, jokers: bool) -> Card {
         use Card::*;
         match c {
             '2' => Two,
@@ -85,7 +98,13 @@ impl Card {
             '8' => Eight,
             '9' => Nine,
             'T' => Ten,
-            'J' => Jack,
+            'J' => {
+                if jokers {
+                    Joker
+                } else {
+                    Jack
+                }
+            }
             'Q' => Queen,
             'K' => King,
             'A' => Ace,
@@ -130,8 +149,8 @@ impl Ord for Hand {
 }
 
 impl Hand {
-    fn new(cards: &str, bid: u32) -> Hand {
-        let cards = HandCards::new(cards);
+    fn new(cards: &str, bid: u32, jokers: bool) -> Hand {
+        let cards = HandCards::new(cards, jokers);
         Hand {
             cards,
             kind: cards.kind(),
@@ -140,14 +159,12 @@ impl Hand {
     }
 }
 
-impl FromStr for Hand {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl Hand {
+    fn parse(s: &str, jokers: bool) -> Result<Self, Error> {
         let mut it = s.split(" ");
         let cards = it.next().ok_or(Error::msg("no cards"))?.trim();
         let bid = it.next().ok_or(Error::msg("no bid"))?.parse::<u32>()?;
-        Ok(Hand::new(cards, bid))
+        Ok(Hand::new(cards, bid, jokers))
     }
 }
 
@@ -181,6 +198,17 @@ where
         counts[..all_counts.len()].copy_from_slice(&all_counts[..]);
         counts
     }
+
+    fn apply_joker_rule(&mut self, joker: &T) {
+        let jokers = self.counts.remove(joker).unwrap_or(0);
+        if self.counts.is_empty() {
+            self.counts.insert(joker.clone(), jokers);
+            return;
+        }
+        if let Some(max_count) = self.counts.values_mut().max() {
+            *max_count += jokers;
+        }
+    }
 }
 
 #[cfg(test)]
@@ -199,7 +227,7 @@ mod test {
             kind: HandKind::HighCard,
             bid,
         };
-        let actual = "6TK4Q 440".parse::<Hand>().unwrap();
+        let actual = Hand::parse("6TK4Q 440", false).unwrap();
         assert_eq!(expected, actual);
     }
 
@@ -241,7 +269,7 @@ mod test {
         ];
 
         for (cards, kind) in hands.into_iter() {
-            let cards = HandCards::new(cards);
+            let cards = HandCards::new(cards, false);
             assert_eq!(kind, cards.kind());
         }
     }
@@ -253,7 +281,7 @@ mod test {
             "AAAAA 1",
         ]
         .into_iter()
-        .map(Hand::from_str)
+        .map(|s| Hand::parse(s, false))
         .collect::<Result<Vec<Hand>, _>>()
         .unwrap();
 
@@ -268,19 +296,40 @@ mod test {
 
     #[test]
     fn test_example() {
+        let input = [
+            "32T3K 765",
+            "T55J5 684",
+            "KK677 28",
+            "KTJJT 220",
+            "QQQJA 483",
+        ];
         let hands = Hands::new(
-            [
-                "32T3K 765",
-                "T55J5 684",
-                "KK677 28",
-                "KTJJT 220",
-                "QQQJA 483",
-            ]
-            .into_iter()
-            .map(Hand::from_str)
-            .collect::<Result<Vec<Hand>, _>>()
-            .unwrap(),
+            input
+                .into_iter()
+                .map(|s| Hand::parse(s, false))
+                .collect::<Result<Vec<Hand>, _>>()
+                .unwrap(),
         );
         assert_eq!(6440, hands.total_winnings());
+
+        let hands = Hands::new(
+            input
+                .into_iter()
+                .map(|s| Hand::parse(s, true))
+                .collect::<Result<Vec<Hand>, _>>()
+                .unwrap(),
+        );
+        assert_eq!(5905, hands.total_winnings());
+    }
+
+    #[test]
+    fn test_jokers_apply() {
+        let hand = Hand::parse("JJJJJ 1", true).unwrap();
+        assert_eq!(HandKind::FiveOfAKind, hand.kind);
+        assert_eq!(HandKind::FiveOfAKind, hand.kind);
+
+        let hand = Hand::parse("234AK 1", true).unwrap();
+        assert_eq!(HandKind::HighCard, hand.kind);
+        assert_eq!(HandKind::HighCard, hand.kind);
     }
 }
