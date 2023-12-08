@@ -7,4 +7,5 @@ fn test_puzzle_7() {
 #[test]
 fn test_puzzle_8() {
     assert_eq!(21883, aoc32lib::puzzle_8::puzzle_8_1());
+    assert_eq!(12833235391111, aoc32lib::puzzle_8::puzzle_8_2());
 }

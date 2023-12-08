@@ -1,9 +1,21 @@
 use crate::util::load_lines;
 use anyhow::Error;
+use num::integer::Integer;
 use std::collections::HashMap;
+use std::iter::repeat;
 use std::str::FromStr;
 
 pub fn puzzle_8_1() -> u64 {
+    let (directions, map) = get_input();
+    map.path_length(&directions) as u64
+}
+
+pub fn puzzle_8_2() -> u64 {
+    let (directions, map) = get_input();
+    map.multi_path_length(&directions) as u64
+}
+
+fn get_input() -> (Directions, Map) {
     let mut lines = load_lines("8/input.txt");
     let directions = lines
         .next()
@@ -19,11 +31,7 @@ pub fn puzzle_8_1() -> u64 {
         .collect::<Result<Vec<Path>, _>>()
         .unwrap();
 
-    Map::new(&paths[..]).path_length(&directions) as u64
-}
-
-pub fn puzzle_8_2() -> u64 {
-    0
+    (directions, Map::new(&paths[..]))
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -115,6 +123,41 @@ impl Map {
             steps += 1;
         }
         steps
+    }
+
+    fn multi_path_length(&self, directions: &Directions) -> usize {
+        let start: Vec<String> = self
+            .map
+            .keys()
+            .filter(|&k| k.ends_with("A"))
+            .cloned()
+            .collect();
+        let mut cur = start.clone();
+        let mut steps = Vec::with_capacity(cur.len());
+        steps.extend(repeat(0).take(cur.len()));
+        let mut step = 0;
+        for dir in directions.directions.iter().cycle() {
+            cur.iter()
+                .enumerate()
+                .filter(|(_, k)| k.ends_with("Z"))
+                .for_each(|(i, _)| {
+                    steps[i] = step;
+                });
+
+            if steps.iter().all(|i| *i > 0) {
+                break;
+            }
+            match dir {
+                Direction::Left => cur.iter_mut().for_each(|k| {
+                    *k = self.map.get(k).expect("dead path").0.clone();
+                }),
+                Direction::Right => cur.iter_mut().for_each(|k| {
+                    *k = self.map.get(k).expect("dead path").1.clone();
+                }),
+            };
+            step += 1;
+        }
+        steps.iter().fold(1, |acc, cur| acc.lcm(cur))
     }
 }
 
