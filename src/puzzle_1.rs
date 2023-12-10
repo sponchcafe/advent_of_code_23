@@ -2,7 +2,7 @@ use crate::util::load_lines;
 use std::iter::Iterator;
 use std::str::FromStr;
 
-pub fn puzzle_1() -> u32 {
+pub fn puzzle_1_1() -> u32 {
     load_lines("1/input.txt")
         .map(|l| {
             l.unwrap()
@@ -11,6 +11,31 @@ pub fn puzzle_1() -> u32 {
         })
         .map(|c| c.number())
         .sum()
+}
+
+pub fn puzzle_1_2() -> u32 {
+    load_lines("1/input.txt")
+        .map(|l| {
+            replace_numbers(l.unwrap())
+                .parse::<Calibration>()
+                .expect("input is parseable")
+        })
+        .map(|c| c.number())
+        .sum()
+}
+
+fn replace_numbers(s: String) -> String {
+    let ret = s
+        .replace("one", "o1e")
+        .replace("two", "t2o")
+        .replace("three", "th3ee")
+        .replace("four", "f4ur")
+        .replace("five", "f5ve")
+        .replace("six", "s6x")
+        .replace("seven", "se7en")
+        .replace("eight", "ei8ht")
+        .replace("nine", "n9ne");
+    ret
 }
 
 #[derive(Debug, PartialEq, Eq)]
