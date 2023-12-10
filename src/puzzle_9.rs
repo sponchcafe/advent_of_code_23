@@ -7,6 +7,13 @@ pub fn puzzle_9_1() -> i32 {
         .sum::<i32>()
 }
 
+pub fn puzzle_9_2() -> i32 {
+    load_lines("9/input.txt")
+        .map(|l| parse_line(&l.expect("readline")))
+        .map(|n| prediction_reversed(&n[..]))
+        .sum::<i32>()
+}
+
 fn parse_line(line: &str) -> Vec<i32> {
     line.split(char::is_whitespace)
         .map(|s| str::parse::<i32>(s).expect("valid numbers"))
@@ -28,6 +35,12 @@ fn prediction(data: &[i32]) -> i32 {
     }
 }
 
+fn prediction_reversed(data: &[i32]) -> i32 {
+    let mut data: Vec<i32> = data.iter().cloned().collect();
+    data.reverse();
+    prediction(&data[..])
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -46,5 +59,10 @@ mod test {
         assert_eq!(18, prediction(EXAMPLE_1));
         assert_eq!(28, prediction(EXAMPLE_2));
         assert_eq!(68, prediction(EXAMPLE_3));
+    }
+
+    #[test]
+    fn test_example_reversed() {
+        assert_eq!(5, prediction_reversed(EXAMPLE_3));
     }
 }
