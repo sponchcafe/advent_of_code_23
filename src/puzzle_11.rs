@@ -2,8 +2,16 @@ use crate::util::load_lines;
 use std::collections::BTreeSet;
 
 pub fn puzzle_11_1() -> u64 {
+    puzzle(2)
+}
+
+pub fn puzzle_11_2() -> u64 {
+    puzzle(1000000)
+}
+
+fn puzzle(expansion_rate: usize) -> u64 {
     let lines = load_lines("11/input.txt");
-    let universe = Universe::new(lines.map(|r| r.expect("line")));
+    let universe = Universe::new(lines.map(|r| r.expect("line")), expansion_rate);
     universe.distances().into_iter().sum::<usize>() as u64
 }
 
@@ -30,13 +38,13 @@ impl Distance {
 
         for e in expansion.rows.iter() {
             if start_row < *e && *e < stop_row {
-                delta_row += 1;
+                delta_row += expansion.rate - 1;
             }
         }
 
         for e in expansion.cols.iter() {
             if start_col < *e && *e < stop_col {
-                delta_col += 1;
+                delta_col += expansion.rate - 1;
             }
         }
 
@@ -54,10 +62,11 @@ struct Universe {
 struct Expansion {
     rows: Vec<usize>,
     cols: Vec<usize>,
+    rate: usize,
 }
 
 impl Universe {
-    fn new<L, S>(lines: L) -> Self
+    fn new<L, S>(lines: L, expansion_rate: usize) -> Self
     where
         L: Iterator<Item = S>,
         S: AsRef<str>,
@@ -90,6 +99,7 @@ impl Universe {
                         .is_none()
                 })
                 .collect(),
+            rate: expansion_rate,
         };
 
         Universe {
@@ -127,7 +137,7 @@ mod test {
     #[test]
     fn test_parse_universe() {
         let lines = EXAMPLE.lines();
-        let universe = Universe::new(lines);
+        let universe = Universe::new(lines, 2);
         assert!(universe.galaxies.contains(&Coordinate { row: 0, col: 3 }));
         assert!(universe.galaxies.contains(&Coordinate { row: 1, col: 7 }));
         assert!(universe.galaxies.contains(&Coordinate { row: 9, col: 0 }));
@@ -136,10 +146,11 @@ mod test {
     #[test]
     fn test_expansion() {
         let lines = EXAMPLE.lines();
-        let universe = Universe::new(lines);
+        let universe = Universe::new(lines, 2);
         let expected = Expansion {
             rows: vec![3, 7],
             cols: vec![2, 5, 8],
+            rate: 2,
         };
         assert_eq!(expected, universe.expansion);
     }
@@ -147,8 +158,16 @@ mod test {
     #[test]
     fn test_example() {
         let lines = EXAMPLE.lines();
-        let universe = Universe::new(lines);
+        let universe = Universe::new(lines, 2);
         let distances: Vec<usize> = universe.distances();
         assert_eq!(374usize, distances.into_iter().sum());
+    }
+
+    #[test]
+    fn test_example_rate() {
+        let lines = EXAMPLE.lines();
+        let universe = Universe::new(lines, 10);
+        let distances: Vec<usize> = universe.distances();
+        assert_eq!(1030usize, distances.into_iter().sum());
     }
 }
