@@ -32,3 +32,8 @@ fn test_puzzle_11() {
     assert_eq!(9769724, aoc32lib::puzzle_11::puzzle_11_1());
     assert_eq!(603020563700, aoc32lib::puzzle_11::puzzle_11_2());
 }
+
+#[test]
+fn test_puzzle_12() {
+    assert_eq!(7236, aoc32lib::puzzle_12::puzzle_12_1());
+}
