@@ -34,30 +34,33 @@ pub fn puzzle_3_2() -> u32 {
     let input = load_file("3/input.txt");
     let width = input.find("\n").expect("at least one line");
     let schematic = schematic(&input, width);
-    schematic
+    let numbers: Vec<(Position, u32)> = schematic
         .iter()
-        .filter_map(|(pos, item)| item.gear().map(|()| pos))
-        .filter_map(|pos| {
-            let mut values = vec![];
-            for ref h in pos.hull() {
-                if let Some(item) = schematic.get(h) {
-                    if let Some(n) = item.number() {
-                        values.push((pos, n));
+        .filter_map(|(pos, item)| item.number().map(|n| (pos.clone(), n)))
+        .collect();
+    let mut ratios = BTreeMap::<Position, Vec<u32>>::new();
+    for (p, n) in numbers.iter() {
+        for h in p.hull() {
+            if let Some(item) = schematic.get(&h) {
+                if item.gear().is_some() {
+                    if let Some(v) = ratios.get_mut(&h) {
+                        v.push(*n);
+                    } else {
+                        ratios.insert(h.clone(), vec![*n]);
                     }
                 }
             }
-            if values.len() == 2 {
-                println!("{:?}", values);
-                Some(values)
-            } else {
-                None
-            }
-        })
-        .map(|v| v[0].1 * v[1].1)
+        }
+    }
+
+    ratios
+        .iter()
+        .filter(|(p, v)| v.len() == 2)
+        .map(|(_, v)| v.iter().fold(1, |a, b| a * b))
         .sum()
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 struct Position {
     line: isize,
     column: isize,
