@@ -1,4 +1,4 @@
-use crate::util::load_lines;
+use crate::util::{load_lines, transpose};
 
 pub fn puzzle_14_1() -> u64 {
     let lines: Vec<String> = load_lines("14/input.txt")
@@ -9,21 +9,6 @@ pub fn puzzle_14_1() -> u64 {
         .iter()
         .map(|s| weight_after_shift(s))
         .sum::<usize>() as u64
-}
-
-fn transpose(lines: &Vec<String>) -> Vec<String> {
-    let mut ret: Vec<String> = (0..lines[0].len())
-        .into_iter()
-        .map(|_| String::new())
-        .collect();
-    let mut iters: Vec<_> = lines.iter().map(|l| l.chars()).collect();
-    for i in 0..lines[0].len() {
-        ret[i] = iters
-            .iter_mut()
-            .map(|it| it.next().expect("equal line length"))
-            .collect();
-    }
-    ret
 }
 
 fn weight_after_shift(s: &str) -> usize {

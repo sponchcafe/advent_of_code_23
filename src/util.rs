@@ -33,3 +33,18 @@ where
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
+
+pub fn transpose(lines: &Vec<String>) -> Vec<String> {
+    let mut ret: Vec<String> = (0..lines[0].len())
+        .into_iter()
+        .map(|_| String::new())
+        .collect();
+    let mut iters: Vec<_> = lines.iter().map(|l| l.chars()).collect();
+    for i in 0..lines[0].len() {
+        ret[i] = iters
+            .iter_mut()
+            .map(|it| it.next().expect("equal line length"))
+            .collect();
+    }
+    ret
+}
