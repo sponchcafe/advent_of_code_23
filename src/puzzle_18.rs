@@ -6,6 +6,12 @@ pub fn puzzle_18_1() -> u64 {
     path.area() as u64
 }
 
+pub fn puzzle_18_2() -> u64 {
+    let input = load_file("18/input.txt");
+    let path = Path::parse_hex(&input);
+    path.area() as u64
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct Path {
     path: Vec<(isize, isize)>,
@@ -13,6 +19,41 @@ struct Path {
 }
 
 impl Path {
+    fn parse_hex(s: &str) -> Self {
+        let mut circumference = 0usize;
+        let path = s
+            .trim()
+            .lines()
+            .map(|l| {
+                let hex = l.trim().split(" ").skip(2).next().expect("hex part");
+                (
+                    isize::from_str_radix(&hex[2..7], 16).expect("distance"),
+                    &hex[7..8],
+                )
+            })
+            .scan((0, 0), |state, (dist, dir)| {
+                circumference += dist as usize;
+                match dir {
+                    "0" => state.0 += dist,
+                    "1" => state.1 -= dist,
+                    "2" => state.0 -= dist,
+                    "3" => state.1 += dist,
+                    _ => panic!("unexpected direction"),
+                };
+                Some(*state)
+            })
+            .collect();
+
+        let mut path = Self::normalize_path(path);
+        if path[0].1 != path[1].1 {
+            path.rotate_left(1);
+        }
+        Path {
+            path,
+            circumference,
+        }
+    }
+
     fn parse(s: &str) -> Self {
         let mut circumference = 0usize;
         let path = s
