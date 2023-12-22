@@ -9,6 +9,7 @@ pub mod puzzle_17;
 pub mod puzzle_18;
 pub mod puzzle_2;
 pub mod puzzle_20;
+pub mod puzzle_22;
 pub mod puzzle_3;
 pub mod puzzle_4;
 pub mod puzzle_5;
@@ -53,6 +54,7 @@ pub fn solve_puzzle(id: (u32, u32)) -> Box<dyn Display> {
         (18, 1) => format!("{}", puzzle_18::puzzle_18_1()),
         (18, 2) => format!("{}", puzzle_18::puzzle_18_2()),
         (20, 1) => format!("{}", puzzle_20::puzzle_20_1()),
+        (22, 1) => format!("{}", puzzle_22::puzzle_22_1()),
         (1..=25, 1..=2) => String::from("Still unknown..."),
         (_, _) => String::from("Forever unknown..."),
     })
